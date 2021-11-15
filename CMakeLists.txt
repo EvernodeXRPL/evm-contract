@@ -17,6 +17,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-result -Wreturn-type")
 add_executable(evmcontract
     src/evm/evm.cpp
     src/evm/evm_host.cpp
+    src/sqlite.cpp
     src/util.cpp
     src/contract.cpp
 )

@@ -1,6 +1,6 @@
 
 #include "../pchheader.hpp"
-#include "evm_host.h"
+#include "evm_host.hpp"
 
 namespace evm
 {

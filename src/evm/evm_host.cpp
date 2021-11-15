@@ -1,40 +1,20 @@
 #include "../pchheader.hpp"
-#include "evm_host.h"
+#include "evm_host.hpp"
+#include "evm_account.hpp"
 
 using namespace evmc::literals;
 
 namespace evm
 {
-    struct account
-    {
-        virtual ~account() = default;
-
-        evmc::uint256be balance = {};
-        std::vector<uint8_t> code;
-        std::map<evmc::bytes32, evmc::bytes32> storage;
-
-        virtual evmc::bytes32 code_hash() const
-        {
-            // Extremely dumb "hash" function.
-            evmc::bytes32 ret{};
-            for (std::vector<uint8_t>::size_type i = 0; i != code.size(); i++)
-            {
-                auto v = code[i];
-                ret.bytes[v % sizeof(ret.bytes)] ^= v;
-            }
-            return ret;
-        }
-    };
-
     class evm_host : public evmc::Host
     {
-        std::map<evmc::address, account> accounts;
+        std::map<evmc::address, evm_account> accounts;
         evmc_tx_context tx_context{};
 
     public:
         evm_host() = default;
         explicit evm_host(evmc_tx_context &_tx_context) noexcept : tx_context{_tx_context} {}
-        evm_host(evmc_tx_context &_tx_context, std::map<evmc::address, account> &_accounts) noexcept
+        evm_host(evmc_tx_context &_tx_context, std::map<evmc::address, evm_account> &_accounts) noexcept
             : accounts{_accounts}, tx_context{_tx_context}
         {
         }
