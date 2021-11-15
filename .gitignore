@@ -1,0 +1,12 @@
+*~
+*.swp
+*.swo
+.*.sw?
+.DS_Store
+build
+evmcontract.dir
+.vscode
+**/Makefile
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/CMakeFiles
