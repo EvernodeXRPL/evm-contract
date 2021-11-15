@@ -3,7 +3,7 @@
 
 #include "pchheader.hpp"
 
-namespace sqlite
+namespace sql
 {
     /**
     * Define an enum and a string array for the column data types.
@@ -52,16 +52,22 @@ namespace sqlite
 
     int create_index(sqlite3 *db, std::string_view table_name, std::string_view column_names, const bool is_unique);
 
-    int insert_rows(sqlite3 *db, std::string_view table_name, std::string_view column_names_string, const std::vector<std::string> &value_strings);
-
-    int insert_row(sqlite3 *db, std::string_view table_name, std::string_view column_names_string, std::string_view value_string);
-
     int close_db(sqlite3 **db);
 
     int initialize_db(sqlite3 *db);
 
+    int account_exists(sqlite3 *db, std::string_view addr);
+
+    int get_account_balance(sqlite3 *db, std::string_view addr, std::string &balance);
+
+    int get_account_storage(sqlite3 *db, std::string_view addr, std::string_view key, std::string &value);
+
     int insert_account(sqlite3 *db, std::string_view addr, std::string_view balance, std::string_view code);
 
     int insert_account_storage(sqlite3 *db, std::string_view addr, std::string_view key, std::string_view value);
+
+    int update_account_code(sqlite3 *db, std::string_view addr, std::string_view code);
+
+    int update_account_storage(sqlite3 *db, std::string_view addr, std::string_view key, std::string_view value);
 }
 #endif

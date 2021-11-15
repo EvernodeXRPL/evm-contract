@@ -1,27 +1,25 @@
 #include "../pchheader.hpp"
 #include "evm_host.hpp"
 #include "evm_account.hpp"
+#include "sqlite.hpp"
 
 using namespace evmc::literals;
+
+#define BINSTR(addr) std::string_view((char *)addr.bytes, sizeof(addr.bytes))
 
 namespace evm
 {
     class evm_host : public evmc::Host
     {
-        std::map<evmc::address, evm_account> accounts;
         evmc_tx_context tx_context{};
+        sqlite3 &db;
 
     public:
-        evm_host() = default;
-        explicit evm_host(evmc_tx_context &_tx_context) noexcept : tx_context{_tx_context} {}
-        evm_host(evmc_tx_context &_tx_context, std::map<evmc::address, evm_account> &_accounts) noexcept
-            : accounts{_accounts}, tx_context{_tx_context}
-        {
-        }
+        evm_host(sqlite3 &db, evmc_tx_context &_tx_context) noexcept : tx_context{_tx_context}, db{db} {}
 
         bool account_exists(const evmc::address &addr) const noexcept final
         {
-            return accounts.find(addr) != accounts.end();
+            return sql::account_exists(&db, BINSTR(addr)) == 1;
         }
 
         evmc::bytes32 get_storage(const evmc::address &addr,
@@ -143,9 +141,9 @@ namespace evm
         }
     };
 
-    evmc_host_context *create_host_context(evmc_tx_context tx_context)
+    evmc_host_context *create_host_context(sqlite3 &db, evmc_tx_context tx_context)
     {
-        auto host = new evm_host{tx_context};
+        auto host = new evm_host{db, tx_context};
         return host->to_context();
     }
 
