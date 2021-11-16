@@ -10,3 +10,4 @@ evmcontract.dir
 **/CMakeCache.txt
 **/cmake_install.cmake
 **/CMakeFiles
+evm.db
