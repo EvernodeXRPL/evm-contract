@@ -1,5 +1,5 @@
 # EVM Contract
-Hot Pocket C++ contract that can compile and execute solidity contracts using [evmone](https://github.com/ethereum/evmone) library.
+Hot Pocket C++ contract that can execute solidity contracts using [evmone](https://github.com/ethereum/evmone) library.
 
 # Setting up development environment
 
@@ -20,3 +20,4 @@ sudo make install
 cmake .
 make
 ```
+Contents in the 'build' directory must be copied to initial contract state.

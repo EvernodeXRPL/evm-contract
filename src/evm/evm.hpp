@@ -5,7 +5,8 @@
 
 namespace evm
 {
-    int execute(sqlite3 &db, const std::string &codebuf, const std::string &inputbuf);
+    int deploy(sqlite3 *db, std::string_view addr_hex, std::string_view code_hex);
+    int call(sqlite3 *db, std::string_view addr_hex, std::string_view input_hex, std::string &output_hex);
 }
 
 #endif

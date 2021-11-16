@@ -3,7 +3,6 @@
 *.swo
 .*.sw?
 .DS_Store
-build
 evmcontract.dir
 .vscode
 **/Makefile
@@ -11,3 +10,6 @@ evmcontract.dir
 **/cmake_install.cmake
 **/CMakeFiles
 evm.db
+build/*
+!build/run.sh
+!build/libevmone.so.0.8

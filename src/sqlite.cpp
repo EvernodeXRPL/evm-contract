@@ -19,10 +19,10 @@ namespace sql
     constexpr const char *ACCOUNTS_STORAGE_TABLE = "accstorage";
 
     constexpr const char *GET_BALANCE = "SELECT balance FROM acc WHERE addr=? LIMIT 1";
-    constexpr const char *GET_CODE = "SELECT length(code), code FROM acc WHERE addr=? LIMIT 1";
-    constexpr const char *GET_CODE_SIZE = "SELECT length(code) FROM acc WHERE addr=? LIMIT 1";
+    constexpr const char *GET_CODE = "SELECT codelen, code FROM acc WHERE addr=? LIMIT 1";
+    constexpr const char *GET_CODE_SIZE = "SELECT codelen FROM acc WHERE addr=? LIMIT 1";
     constexpr const char *GET_STORAGE = "SELECT value FROM accstorage WHERE addr=? AND key=? LIMIT 1";
-    constexpr const char *INSERT_INTO_ACCOUNTS = "INSERT INTO acc(addr, balance, code) VALUES(?,?,?)";
+    constexpr const char *INSERT_INTO_ACCOUNTS = "INSERT INTO acc(addr, balance, code, codelen) VALUES(?,?,?,?)";
     constexpr const char *UPDATE_ACCOUNTS_CODE = "UPDATE acc SET code=? WHERE addr=?";
     constexpr const char *INSERT_INTO_ACCOUNTS_STORAGE = "INSERT INTO accstorage(addr, key, value) VALUES(?,?,?)";
     constexpr const char *UPDATE_ACCOUNTS_STORAGE = "UPDATE accstorage SET value=? WHERE addr=? AND key=?";
@@ -183,7 +183,8 @@ namespace sql
         const std::vector<table_column_info> accounts_columns{
             table_column_info("addr", COLUMN_DATA_TYPE::BLOB, false),
             table_column_info("balance", COLUMN_DATA_TYPE::BLOB, false),
-            table_column_info("code", COLUMN_DATA_TYPE::BLOB, true)};
+            table_column_info("code", COLUMN_DATA_TYPE::BLOB, true),
+            table_column_info("codelen", COLUMN_DATA_TYPE::INT, false)};
 
         if (create_table(db, ACCOUNTS_TABLE, accounts_columns, "addr") == -1 ||
             create_index(db, ACCOUNTS_TABLE, "addr", true) == -1)
@@ -267,7 +268,7 @@ namespace sql
     {
         sqlite3_stmt *stmt;
 
-        if (sqlite3_prepare_v2(db, GET_BALANCE, -1, &stmt, 0) == SQLITE_OK && stmt != NULL &&
+        if (sqlite3_prepare_v2(db, GET_CODE, -1, &stmt, 0) == SQLITE_OK && stmt != NULL &&
             BIND_BLOB20(1, addr))
         {
             const int result = sqlite3_step(stmt);
@@ -306,7 +307,7 @@ namespace sql
     {
         sqlite3_stmt *stmt;
 
-        if (sqlite3_prepare_v2(db, GET_BALANCE, -1, &stmt, 0) == SQLITE_OK && stmt != NULL &&
+        if (sqlite3_prepare_v2(db, GET_CODE_SIZE, -1, &stmt, 0) == SQLITE_OK && stmt != NULL &&
             BIND_BLOB20(1, addr))
         {
             const int result = sqlite3_step(stmt);
@@ -398,6 +399,7 @@ namespace sql
             BIND_BLOB20(1, addr) &&
             BIND_BLOB32(2, balance) &&
             BIND_BLOB_N(3, code, code.size()) &&
+            sqlite3_bind_int64(stmt, 4, code.size()) == SQLITE_OK &&
             sqlite3_step(stmt) == SQLITE_DONE)
         {
             sqlite3_finalize(stmt);
