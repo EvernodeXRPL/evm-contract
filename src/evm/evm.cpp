@@ -16,7 +16,7 @@ namespace evm
         std::string output;
         std::string addr = util::hex2bin(addr_hex);
         std::string code = util::hex2bin(code_hex);
-        evmc::uint256be balance = FULL_BALANCE;
+        evmc::uint256be balance = LARGE_BALANCE;
         if (sql::insert_account(db, addr, BINSTR(balance), code) != -1 &&
             execute(db, addr, {}, code, output) == 0)
             return sql::update_account_code(db, addr, output);

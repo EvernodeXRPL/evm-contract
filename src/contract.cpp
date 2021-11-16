@@ -24,6 +24,9 @@ int exec_contract()
 
     const struct hp_contract_context *ctx = hp_get_context();
 
+    if (ctx->readonly) // This contract doesn't support readonly mode yet.
+        return 1;
+
     sqlite3 *db = NULL;
 
     // Create the sqlite db after genesis ledger.
