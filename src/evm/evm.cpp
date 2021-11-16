@@ -6,6 +6,35 @@
 
 namespace evm
 {
+    const evmc::address bin2addr(std::string_view bin);
+    int execute(sqlite3 *db, std::string_view addr, std::string_view input, std::string_view code, std::string &output);
+
+    int deploy(sqlite3 *db, std::string_view addr_hex, std::string_view code_hex)
+    {
+        // Create a new account and run deployment bytecode against it.
+        // Then store the resulting bytecode in the account code.
+        std::string output;
+        std::string addr = util::hex2bin(addr_hex);
+        std::string code = util::hex2bin(code_hex);
+        evmc::uint256be balance = FULL_BALANCE;
+        if (sql::insert_account(db, addr, BINSTR(balance), code) != -1 &&
+            execute(db, addr, {}, code, output) == 0)
+            return sql::update_account_code(db, addr, output);
+
+        return -1;
+    }
+
+    int run(sqlite3 *db, std::string_view addr_hex, std::string_view input_hex, std::string &output)
+    {
+        // Retrieve the account's code and run the code.
+        std::string code;
+        std::string addr = util::hex2bin(addr_hex);
+        std::string input = util::hex2bin(input_hex);
+        if (sql::get_account_code(db, addr, code) == 1)
+            return execute(db, addr, input, code, output);
+        return -1;
+    }
+
     const evmc::address bin2addr(std::string_view bin)
     {
         evmc::address addr = {};
@@ -76,29 +105,5 @@ namespace evm
         destroy_host_context(host_ctx);
         evmc_destroy(vm);
         return exit_code;
-    }
-
-    int deploy(sqlite3 *db, std::string_view addr_hex, std::string_view code_hex)
-    {
-
-        std::string output;
-        std::string addr = util::hex2bin(addr_hex);
-        std::string code = util::hex2bin(code_hex);
-        evmc::uint256be balance = FULL_BALANCE;
-        if (sql::insert_account(db, addr, BINSTR(balance), code) != -1 &&
-            execute(db, addr, {}, code, output) == 0)
-            return sql::update_account_code(db, addr, output);
-
-        return -1;
-    }
-
-    int run(sqlite3 *db, std::string_view addr_hex, std::string_view input_hex, std::string &output)
-    {
-        std::string code;
-        std::string addr = util::hex2bin(addr_hex);
-        std::string input = util::hex2bin(input_hex);
-        if (sql::get_account_code(db, addr, code) == 1)
-            return execute(db, addr, input, code, output);
-        return -1;
     }
 }
