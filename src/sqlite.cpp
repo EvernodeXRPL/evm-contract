@@ -274,16 +274,13 @@ namespace sql
             const int result = sqlite3_step(stmt);
             if (result == SQLITE_ROW)
             {
-                std::cout << "A\n";
                 if (sqlite3_column_type(stmt, 0) == SQLITE_NULL)
                 {
-                    std::cout << "B\n";
                     code = {};
                 }
                 else
                 {
                     const size_t size = sqlite3_column_int64(stmt, 0);
-                    std::cout << size << " C\n";
                     const void *blob = sqlite3_column_blob(stmt, 1);
                     code.resize(size);
                     memcpy(code.data(), blob, size);

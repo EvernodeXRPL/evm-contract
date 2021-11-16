@@ -24,14 +24,20 @@ namespace evm
         return -1;
     }
 
-    int run(sqlite3 *db, std::string_view addr_hex, std::string_view input_hex, std::string &output)
+    int call(sqlite3 *db, std::string_view addr_hex, std::string_view input_hex, std::string &output_hex)
     {
         // Retrieve the account's code and run the code.
         std::string code;
         std::string addr = util::hex2bin(addr_hex);
         std::string input = util::hex2bin(input_hex);
         if (sql::get_account_code(db, addr, code) == 1)
-            return execute(db, addr, input, code, output);
+        {
+            std::string output;
+            const int ret = execute(db, addr, input, code, output);
+            if (ret == 0)
+                output_hex = util::bin2hex(output);
+            return ret;
+        }
         return -1;
     }
 
