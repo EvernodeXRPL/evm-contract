@@ -42,7 +42,6 @@ namespace evm
             if (acc == 0)
             {
                 evmc::uint256be balance = FULL_BALANCE;
-                std::cout << "INSERT " << BINHEX(addr) << "\n";
                 if (sql::insert_account(&db, BINSTR(addr), BINSTR(balance), {}) == -1)
                     return evmc_storage_status::EVMC_STORAGE_UNCHANGED;
             }

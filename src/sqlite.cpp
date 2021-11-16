@@ -18,10 +18,10 @@ namespace sql
     constexpr const char *ACCOUNTS_TABLE = "acc";
     constexpr const char *ACCOUNTS_STORAGE_TABLE = "accstorage";
 
-    constexpr const char *GET_BALANCE = "SELECT balance FROM acc WHERE addr=?";
-    constexpr const char *GET_CODE = "SELECT length(code), code FROM acc WHERE addr=?";
-    constexpr const char *GET_CODE_SIZE = "SELECT length(code) FROM acc WHERE addr=?";
-    constexpr const char *GET_STORAGE = "SELECT value FROM accstorage WHERE addr=? AND key=?";
+    constexpr const char *GET_BALANCE = "SELECT balance FROM acc WHERE addr=? LIMIT 1";
+    constexpr const char *GET_CODE = "SELECT length(code), code FROM acc WHERE addr=? LIMIT 1";
+    constexpr const char *GET_CODE_SIZE = "SELECT length(code) FROM acc WHERE addr=? LIMIT 1";
+    constexpr const char *GET_STORAGE = "SELECT value FROM accstorage WHERE addr=? AND key=? LIMIT 1";
     constexpr const char *INSERT_INTO_ACCOUNTS = "INSERT INTO acc(addr, balance, code) VALUES(?,?,?)";
     constexpr const char *UPDATE_ACCOUNTS_CODE = "UPDATE acc SET code=? WHERE addr=?";
     constexpr const char *INSERT_INTO_ACCOUNTS_STORAGE = "INSERT INTO accstorage(addr, key, value) VALUES(?,?,?)";
@@ -210,7 +210,7 @@ namespace sql
         sqlite3_stmt *stmt;
 
         if (sqlite3_prepare_v2(db, GET_BALANCE, -1, &stmt, 0) == SQLITE_OK && stmt != NULL &&
-            BIND_BLOB20(1, addr) == SQLITE_OK)
+            BIND_BLOB20(1, addr))
         {
             const int result = sqlite3_step(stmt);
             if (result == SQLITE_ROW)
@@ -238,7 +238,7 @@ namespace sql
         sqlite3_stmt *stmt;
 
         if (sqlite3_prepare_v2(db, GET_BALANCE, -1, &stmt, 0) == SQLITE_OK && stmt != NULL &&
-            BIND_BLOB20(1, addr) == SQLITE_OK)
+            BIND_BLOB20(1, addr))
         {
             const int result = sqlite3_step(stmt);
             if (result == SQLITE_ROW)
@@ -268,7 +268,7 @@ namespace sql
         sqlite3_stmt *stmt;
 
         if (sqlite3_prepare_v2(db, GET_BALANCE, -1, &stmt, 0) == SQLITE_OK && stmt != NULL &&
-            BIND_BLOB20(1, addr) == SQLITE_OK)
+            BIND_BLOB20(1, addr))
         {
             const int result = sqlite3_step(stmt);
             if (result == SQLITE_ROW)
@@ -307,7 +307,7 @@ namespace sql
         sqlite3_stmt *stmt;
 
         if (sqlite3_prepare_v2(db, GET_BALANCE, -1, &stmt, 0) == SQLITE_OK && stmt != NULL &&
-            BIND_BLOB20(1, addr) == SQLITE_OK)
+            BIND_BLOB20(1, addr))
         {
             const int result = sqlite3_step(stmt);
             if (result == SQLITE_ROW)
@@ -339,8 +339,8 @@ namespace sql
         sqlite3_stmt *stmt;
 
         if (sqlite3_prepare_v2(db, GET_STORAGE, -1, &stmt, 0) == SQLITE_OK && stmt != NULL &&
-            BIND_BLOB20(1, addr) == SQLITE_OK &&
-            BIND_BLOB32(2, key) == SQLITE_OK)
+            BIND_BLOB20(1, addr) &&
+            BIND_BLOB32(2, key))
         {
             const int result = sqlite3_step(stmt);
             if (result == SQLITE_ROW)
@@ -368,8 +368,8 @@ namespace sql
         sqlite3_stmt *stmt;
 
         if (sqlite3_prepare_v2(db, GET_STORAGE, -1, &stmt, 0) == SQLITE_OK && stmt != NULL &&
-            BIND_BLOB20(1, addr) == SQLITE_OK &&
-            BIND_BLOB32(2, key) == SQLITE_OK)
+            BIND_BLOB20(1, addr) &&
+            BIND_BLOB32(2, key))
         {
             const int result = sqlite3_step(stmt);
             if (result == SQLITE_ROW)
@@ -411,7 +411,7 @@ namespace sql
     int insert_account_storage(sqlite3 *db, std::string_view addr, std::string_view key, std::string_view value)
     {
         sqlite3_stmt *stmt;
-        if (sqlite3_prepare_v2(db, INSERT_INTO_ACCOUNTS, -1, &stmt, 0) == SQLITE_OK && stmt != NULL &&
+        if (sqlite3_prepare_v2(db, INSERT_INTO_ACCOUNTS_STORAGE, -1, &stmt, 0) == SQLITE_OK && stmt != NULL &&
             BIND_BLOB20(1, addr) &&
             BIND_BLOB32(2, key) &&
             BIND_BLOB32(3, value) &&
