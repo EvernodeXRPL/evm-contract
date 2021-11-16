@@ -5,7 +5,7 @@
 
 namespace evm
 {
-    int execute(const std::string &codebuf, const std::string &inputbuf);
+    int execute(sqlite3 &db, const std::string &codebuf, const std::string &inputbuf);
 }
 
 #endif

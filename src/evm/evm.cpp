@@ -4,7 +4,7 @@
 
 namespace evm
 {
-    int execute(const std::string &code_buf, const std::string &input_buf)
+    int execute(sqlite3 &db, const std::string &code_buf, const std::string &input_buf)
     {
         const uint8_t *code = (uint8_t *)code_buf.data();
         const size_t code_size = code_buf.size();
@@ -37,7 +37,7 @@ namespace evm
         struct evmc_vm *vm = evmc_create_evmone();
 
         const struct evmc_host_interface *host = &evmc::Host::get_interface();
-        struct evmc_host_context *host_ctx = create_host_context(tx_context);
+        struct evmc_host_context *host_ctx = create_host_context(db, tx_context);
 
         struct evmc_result result = evmc_execute(vm, host, host_ctx, EVMC_LONDON, &msg, code, code_size);
         printf("Execution result:\n");

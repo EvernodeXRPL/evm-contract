@@ -1,11 +1,9 @@
 #include "../pchheader.hpp"
+#include "../sqlite.hpp"
+#include "../util.hpp"
 #include "evm_host.hpp"
-#include "evm_account.hpp"
-#include "sqlite.hpp"
 
 using namespace evmc::literals;
-
-#define BINSTR(addr) std::string_view((char *)addr.bytes, sizeof(addr.bytes))
 
 namespace evm
 {
@@ -25,15 +23,10 @@ namespace evm
         evmc::bytes32 get_storage(const evmc::address &addr,
                                   const evmc::bytes32 &key) const noexcept final
         {
-            const auto account_iter = accounts.find(addr);
-            if (account_iter == accounts.end())
-                return {};
+            evmc::bytes32 value = {};
+            if (sql::get_account_storage(&db, BINSTR(addr), BINSTR(key), value.bytes) == 1)
+                return value;
 
-            const auto storage_iter = account_iter->second.storage.find(key);
-            if (storage_iter != account_iter->second.storage.end())
-            {
-                return storage_iter->second;
-            }
             return {};
         }
 
@@ -41,34 +34,60 @@ namespace evm
                                         const evmc::bytes32 &key,
                                         const evmc::bytes32 &value) noexcept final
         {
-            auto &account = accounts[addr];
-            auto prev_value = account.storage[key];
-            account.storage[key] = value;
+            const int acc = sql::account_exists(&db, BINSTR(addr));
+            if (acc == -1)
+                return evmc_storage_status::EVMC_STORAGE_UNCHANGED;
 
-            return (prev_value == value) ? EVMC_STORAGE_UNCHANGED : EVMC_STORAGE_MODIFIED;
+            // Create account if not exists.
+            if (acc == 0)
+            {
+                evmc::uint256be balance = FULL_BALANCE;
+                std::cout << "INSERT " << BINHEX(addr) << "\n";
+                if (sql::insert_account(&db, BINSTR(addr), BINSTR(balance), {}) == -1)
+                    return evmc_storage_status::EVMC_STORAGE_UNCHANGED;
+            }
+
+            if (sql::account_storage_exists(&db, BINSTR(addr), BINSTR(key)) != 1)
+            {
+                if (sql::insert_account_storage(&db, BINSTR(addr), BINSTR(key), BINSTR(value)) != -1)
+                    return evmc_storage_status::EVMC_STORAGE_MODIFIED;
+            }
+            else
+            {
+                if (sql::update_account_storage(&db, BINSTR(addr), BINSTR(key), BINSTR(value)) != -1)
+                    return evmc_storage_status::EVMC_STORAGE_MODIFIED;
+            }
+
+            return evmc_storage_status::EVMC_STORAGE_UNCHANGED;
         }
 
         evmc::uint256be get_balance(const evmc::address &addr) const noexcept final
         {
-            auto it = accounts.find(addr);
-            if (it != accounts.end())
-                return it->second.balance;
+            evmc::uint256be balance = {};
+            if (sql::get_account_balance(&db, BINSTR(addr), balance.bytes) == 1)
+                return balance;
             return {};
         }
 
         size_t get_code_size(const evmc::address &addr) const noexcept final
         {
-            auto it = accounts.find(addr);
-            if (it != accounts.end())
-                return it->second.code.size();
-            return 0;
+            size_t size = 0;
+            sql::get_account_code_size(&db, BINSTR(addr), size);
+            return size;
         }
 
         evmc::bytes32 get_code_hash(const evmc::address &addr) const noexcept final
         {
-            auto it = accounts.find(addr);
-            if (it != accounts.end())
-                return it->second.code_hash();
+            std::string code;
+            if (sql::get_account_code(&db, BINSTR(addr), code) == 1)
+            {
+                // Extremely dumb "hash" function.
+                evmc::bytes32 ret{};
+                for (char v : code)
+                    ret.bytes[v % sizeof(ret.bytes)] ^= v;
+                return ret;
+            }
+
             return {};
         }
 
@@ -77,20 +96,20 @@ namespace evm
                          uint8_t *buffer_data,
                          size_t buffer_size) const noexcept final
         {
-            const auto it = accounts.find(addr);
-            if (it == accounts.end())
-                return 0;
+            std::string code;
+            if (sql::get_account_code(&db, BINSTR(addr), code) == 1)
+            {
+                if (code_offset >= code.size())
+                    return 0;
 
-            const auto &code = it->second.code;
+                const size_t n = std::min(buffer_size, code.size() - code_offset);
 
-            if (code_offset >= code.size())
-                return 0;
+                if (n > 0)
+                    std::copy_n(&code[code_offset], n, buffer_data);
+                return n;
+            }
 
-            const auto n = std::min(buffer_size, code.size() - code_offset);
-
-            if (n > 0)
-                std::copy_n(&code[code_offset], n, buffer_data);
-            return n;
+            return 0;
         }
 
         void selfdestruct(const evmc::address &addr, const evmc::address &beneficiary) noexcept final

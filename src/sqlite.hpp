@@ -29,11 +29,10 @@ namespace sql
     {
         std::string name;
         COLUMN_DATA_TYPE column_type;
-        bool is_key;
         bool is_null;
 
-        table_column_info(std::string_view name, const COLUMN_DATA_TYPE &column_type, const bool is_key = false, const bool is_null = true)
-            : name(name), column_type(column_type), is_key(is_key), is_null(is_null)
+        table_column_info(std::string_view name, const COLUMN_DATA_TYPE &column_type, const bool is_null = true)
+            : name(name), column_type(column_type), is_null(is_null)
         {
         }
     };
@@ -48,7 +47,7 @@ namespace sql
 
     int rollback_transaction(sqlite3 *db);
 
-    int create_table(sqlite3 *db, std::string_view table_name, const std::vector<table_column_info> &column_info);
+    int create_table(sqlite3 *db, std::string_view table_name, const std::vector<table_column_info> &column_info, std::string_view primary_keys);
 
     int create_index(sqlite3 *db, std::string_view table_name, std::string_view column_names, const bool is_unique);
 
@@ -58,9 +57,15 @@ namespace sql
 
     int account_exists(sqlite3 *db, std::string_view addr);
 
-    int get_account_balance(sqlite3 *db, std::string_view addr, std::string &balance);
+    int get_account_balance(sqlite3 *db, std::string_view addr, void *balance);
 
-    int get_account_storage(sqlite3 *db, std::string_view addr, std::string_view key, std::string &value);
+    int get_account_code(sqlite3 *db, std::string_view addr, std::string &code);
+
+    int get_account_code_size(sqlite3 *db, std::string_view addr, size_t &size);
+
+    int account_storage_exists(sqlite3 *db, std::string_view addr, std::string_view key);
+
+    int get_account_storage(sqlite3 *db, std::string_view addr, std::string_view key, void *value);
 
     int insert_account(sqlite3 *db, std::string_view addr, std::string_view balance, std::string_view code);
 

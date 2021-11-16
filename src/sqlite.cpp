@@ -19,6 +19,8 @@ namespace sql
     constexpr const char *ACCOUNTS_STORAGE_TABLE = "accstorage";
 
     constexpr const char *GET_BALANCE = "SELECT balance FROM acc WHERE addr=?";
+    constexpr const char *GET_CODE = "SELECT length(code), code FROM acc WHERE addr=?";
+    constexpr const char *GET_CODE_SIZE = "SELECT length(code) FROM acc WHERE addr=?";
     constexpr const char *GET_STORAGE = "SELECT value FROM accstorage WHERE addr=? AND key=?";
     constexpr const char *INSERT_INTO_ACCOUNTS = "INSERT INTO acc(addr, balance, code) VALUES(?,?,?)";
     constexpr const char *UPDATE_ACCOUNTS_CODE = "UPDATE acc SET code=? WHERE addr=?";
@@ -30,7 +32,7 @@ namespace sql
 #define BIND_BLOB32(idx, field) BIND_BLOB_N(idx, field, 32)
 #define BIND_BLOB20(idx, field) BIND_BLOB_N(idx, field, 20)
 
-#define GET_BLOB_N(idx, n) std::string((char *)sqlite3_column_blob(stmt, idx), n)
+#define GET_BLOB_N(idx, n) std::string_view((char *)sqlite3_column_blob(stmt, idx), n)
 #define GET_BLOB32(idx) GET_BLOB_N(idx, 32)
 #define GET_BLOB20(idx) GET_BLOB_N(idx, 20)
 
@@ -104,7 +106,7 @@ namespace sql
      * @param column_info Column info of the table.
      * @returns returns 0 on success, or -1 on error.
     */
-    int create_table(sqlite3 *db, std::string_view table_name, const std::vector<table_column_info> &column_info)
+    int create_table(sqlite3 *db, std::string_view table_name, const std::vector<table_column_info> &column_info, std::string_view primary_keys)
     {
         std::string sql;
         sql.append(CREATE_TABLE).append(table_name).append(" (");
@@ -115,22 +117,17 @@ namespace sql
             sql.append(" ");
             sql.append(COLUMN_DATA_TYPES[itr->column_type]);
 
-            if (itr->is_key)
-            {
-                sql.append(" ");
-                sql.append(PRIMARY_KEY);
-            }
-
             if (!itr->is_null)
             {
                 sql.append(" ");
                 sql.append(NOT_NULL);
             }
 
-            if (itr != column_info.end() - 1)
-                sql.append(",");
+            sql.append(",");
         }
-        sql.append(")");
+        sql.append("PRIMARY KEY(");
+        sql.append(primary_keys);
+        sql.append("))");
 
         const int ret = exec_sql(db, sql);
         if (ret == -1)
@@ -182,21 +179,23 @@ namespace sql
 
     int initialize_db(sqlite3 *db)
     {
+        // Accounts table.
         const std::vector<table_column_info> accounts_columns{
-            table_column_info("addr", COLUMN_DATA_TYPE::BLOB, true, false),
-            table_column_info("balance", COLUMN_DATA_TYPE::BLOB, false, false),
-            table_column_info("code", COLUMN_DATA_TYPE::BLOB, false, false)};
+            table_column_info("addr", COLUMN_DATA_TYPE::BLOB, false),
+            table_column_info("balance", COLUMN_DATA_TYPE::BLOB, false),
+            table_column_info("code", COLUMN_DATA_TYPE::BLOB, true)};
 
-        if (create_table(db, ACCOUNTS_TABLE, accounts_columns) == -1 ||
+        if (create_table(db, ACCOUNTS_TABLE, accounts_columns, "addr") == -1 ||
             create_index(db, ACCOUNTS_TABLE, "addr", true) == -1)
             return -1;
 
+        // Account storage table.
         const std::vector<table_column_info> accounts_storage_columns{
-            table_column_info("addr", COLUMN_DATA_TYPE::BLOB, true, false),
-            table_column_info("key", COLUMN_DATA_TYPE::BLOB, true, false),
-            table_column_info("value", COLUMN_DATA_TYPE::BLOB, false, false)};
+            table_column_info("addr", COLUMN_DATA_TYPE::BLOB, false),
+            table_column_info("key", COLUMN_DATA_TYPE::BLOB, false),
+            table_column_info("value", COLUMN_DATA_TYPE::BLOB, false)};
 
-        if (create_table(db, ACCOUNTS_STORAGE_TABLE, accounts_storage_columns) == -1 ||
+        if (create_table(db, ACCOUNTS_STORAGE_TABLE, accounts_storage_columns, "addr,key") == -1 ||
             create_index(db, ACCOUNTS_STORAGE_TABLE, "addr,key", true) == -1)
             return -1;
 
@@ -234,7 +233,7 @@ namespace sql
     /**
      * @return 1 if found. 0 if not found. -1 if error.
      */
-    int get_account_balance(sqlite3 *db, std::string_view addr, std::string &balance)
+    int get_account_balance(sqlite3 *db, std::string_view addr, void *balance)
     {
         sqlite3_stmt *stmt;
 
@@ -244,7 +243,8 @@ namespace sql
             const int result = sqlite3_step(stmt);
             if (result == SQLITE_ROW)
             {
-                balance = GET_BLOB32(0);
+                std::string_view sv = GET_BLOB32(0);
+                memcpy(balance, sv.data(), sv.size());
                 sqlite3_finalize(stmt);
                 return 1; // Account found.
             }
@@ -263,7 +263,78 @@ namespace sql
     /**
      * @return 1 if found. 0 if not found. -1 if error.
      */
-    int get_account_storage(sqlite3 *db, std::string_view addr, std::string_view key, std::string &value)
+    int get_account_code(sqlite3 *db, std::string_view addr, std::string &code)
+    {
+        sqlite3_stmt *stmt;
+
+        if (sqlite3_prepare_v2(db, GET_BALANCE, -1, &stmt, 0) == SQLITE_OK && stmt != NULL &&
+            BIND_BLOB20(1, addr) == SQLITE_OK)
+        {
+            const int result = sqlite3_step(stmt);
+            if (result == SQLITE_ROW)
+            {
+                if (sqlite3_column_type(stmt, 0) == SQLITE_NULL)
+                {
+                    code = {};
+                }
+                else
+                {
+                    const size_t size = sqlite3_column_int64(stmt, 0);
+                    const void *blob = sqlite3_column_blob(stmt, 1);
+                    code.resize(size);
+                    memcpy(code.data(), blob, size);
+                }
+                sqlite3_finalize(stmt);
+                return 1; // Account found.
+            }
+            else if (result == SQLITE_DONE)
+            {
+                sqlite3_finalize(stmt);
+                return 0; // Account not found.
+            }
+        }
+
+        std::cerr << "Error in sql get_account_balance. " << sqlite3_errmsg(db) << "\n";
+        sqlite3_finalize(stmt);
+        return -1;
+    }
+
+    /**
+     * @return 1 if found. 0 if not found. -1 if error.
+     */
+    int get_account_code_size(sqlite3 *db, std::string_view addr, size_t &size)
+    {
+        sqlite3_stmt *stmt;
+
+        if (sqlite3_prepare_v2(db, GET_BALANCE, -1, &stmt, 0) == SQLITE_OK && stmt != NULL &&
+            BIND_BLOB20(1, addr) == SQLITE_OK)
+        {
+            const int result = sqlite3_step(stmt);
+            if (result == SQLITE_ROW)
+            {
+                if (sqlite3_column_type(stmt, 0) == SQLITE_NULL)
+                    size = 0;
+                else
+                    size = sqlite3_column_int64(stmt, 0);
+                sqlite3_finalize(stmt);
+                return 1; // Account found.
+            }
+            else if (result == SQLITE_DONE)
+            {
+                sqlite3_finalize(stmt);
+                return 0; // Account not found.
+            }
+        }
+
+        std::cerr << "Error in sql get_account_balance. " << sqlite3_errmsg(db) << "\n";
+        sqlite3_finalize(stmt);
+        return -1;
+    }
+
+    /**
+     * @return 1 if found. 0 if not found. -1 if error.
+     */
+    int account_storage_exists(sqlite3 *db, std::string_view addr, std::string_view key)
     {
         sqlite3_stmt *stmt;
 
@@ -274,7 +345,6 @@ namespace sql
             const int result = sqlite3_step(stmt);
             if (result == SQLITE_ROW)
             {
-                value = GET_BLOB32(0);
                 sqlite3_finalize(stmt);
                 return 1; // storage found.
             }
@@ -285,7 +355,38 @@ namespace sql
             }
         }
 
-        std::cerr << "Error in sql get_account_balance. " << sqlite3_errmsg(db) << "\n";
+        std::cerr << "Error in sql account_storage_exists. " << sqlite3_errmsg(db) << "\n";
+        sqlite3_finalize(stmt);
+        return -1;
+    }
+
+    /**
+     * @return 1 if found. 0 if not found. -1 if error.
+     */
+    int get_account_storage(sqlite3 *db, std::string_view addr, std::string_view key, void *value)
+    {
+        sqlite3_stmt *stmt;
+
+        if (sqlite3_prepare_v2(db, GET_STORAGE, -1, &stmt, 0) == SQLITE_OK && stmt != NULL &&
+            BIND_BLOB20(1, addr) == SQLITE_OK &&
+            BIND_BLOB32(2, key) == SQLITE_OK)
+        {
+            const int result = sqlite3_step(stmt);
+            if (result == SQLITE_ROW)
+            {
+                std::string_view sv = GET_BLOB32(0);
+                memcpy(value, sv.data(), sv.size());
+                sqlite3_finalize(stmt);
+                return 1; // storage found.
+            }
+            else if (result == SQLITE_DONE)
+            {
+                sqlite3_finalize(stmt);
+                return 0; // storage not found.
+            }
+        }
+
+        std::cerr << "Error in sql get_account_storage. " << sqlite3_errmsg(db) << "\n";
         sqlite3_finalize(stmt);
         return -1;
     }
@@ -320,7 +421,7 @@ namespace sql
             return 0;
         }
 
-        std::cerr << errno << ": Error inserting account. " << sqlite3_errmsg(db) << "\n";
+        std::cerr << errno << ": Error inserting account storage. " << sqlite3_errmsg(db) << "\n";
         return -1;
     }
 
