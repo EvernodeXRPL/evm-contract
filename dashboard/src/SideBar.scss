@@ -1,0 +1,58 @@
+@import "variables";
+
+.sidebar {
+    width: $sidebar-width;
+    background-color: $sidebar-bg;
+}
+
+.node-num-bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.sidebar-node-title {
+    .badge {
+        font-size: 0.7rem;
+        vertical-align: middle;
+
+        &.status-initial {
+            background-color: $gray-300;
+        }
+
+        &.status-error {
+            background-color: $red;
+        }
+
+        &.status-desync {
+            background-color: $marker-yellow-dark;
+        }
+
+        &.status-normal {
+            background-color: $marker-green-dark;
+        }
+    }
+}
+
+@media only screen and (max-width: 992px) {
+    .sidebar {
+        position: fixed;
+        bottom: 0rem;
+        left: 0rem;
+        width: 27rem;
+        height: auto;
+        box-shadow: -1px -3px 8px #000000c4;
+    }
+}
+
+@media only screen and (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        bottom: 0rem;
+        left: 0rem;
+        right: 0rem;
+        width: auto;
+        height: auto;
+        box-shadow: -1px -3px 8px #000000c4;
+    }
+}

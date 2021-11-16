@@ -1,0 +1,27 @@
+.wrapper {
+    width: 100vw;
+    height: 100vh;
+}
+
+.title-container {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+}
+
+@media only screen and (max-width: 767px) {
+    .wrapper {
+        width: auto;
+        height: auto;
+    }
+
+    .title-container {
+        right: 0px;
+
+        h3 {
+            font-size: 1.2rem;
+            text-shadow: -18px -20px 20px black, 0px 0px 20px black, 0px 0px 20px black, 0px 0px 20px black,
+                20px 10px 20px black, -15px 17px 14px black;
+        }
+    }
+}
