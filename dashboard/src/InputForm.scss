@@ -2,13 +2,14 @@
 
 .input-form {
     overflow: hidden;
+    height: 28rem;
 
     textarea, input {
         font-size: 0.85rem;
     }
 
     textarea.inputdata {
-        height: 14rem;
+        height: 10rem;
     }
 
     textarea.responsedata {

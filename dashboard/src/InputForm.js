@@ -25,10 +25,7 @@ class InputForm extends React.Component {
 
             // Update our state if we are currently displaying the notified node.
             if (this.props.node === node) {
-                if (node.inputSubmission.inProgress)
-                    this.setState(this.state);
-                else
-                    this.setState({ ...this.state, addr: "", input: "" });
+                this.setState(this.state);
             }
         });
     }
