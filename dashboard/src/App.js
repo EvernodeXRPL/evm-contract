@@ -20,6 +20,11 @@ class App extends React.Component {
                 </div>
                 <div className="title-container p-3">
                     <h3>{window.document.title}</h3>
+                    <div className="subtitle p-1 d-none d-lg-block">This Hot Pocket contract hosts the EVM (Ethereum Virtual Machine)
+                    so you can deploy and call compiled Solidity bytecode. This demo emulates an Ethereum accounts
+                    database therefore some real-world Solidity contracts may not be compatible yet.<br/>
+                    [ <a href="https://github.com/HotPocketDev/evm-contract">code</a> | <a href="https://twitter.com/EvernodeXRPL">@EvernodeXRPL</a> ]
+                    </div>
                 </div>
             </> :
                 <div className="text-center mt-5">

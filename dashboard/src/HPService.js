@@ -285,12 +285,23 @@ class HPNodeManager {
         //     node.inputSubmission.ledgerSeqNo = submission.ledgerSeqNo;
         // }
 
-        const funcUrl = `${window.dashboardConfig.inputFunc}&uri=${node.host}&input=${input}`;
-        const resp = await fetch(funcUrl, { method: 'POST' });
-        const obj = await resp.json();
-        node.inputSubmission.lastHash = obj.inputHash;
-        node.inputSubmission.failureReason = obj.failureReason;
-        node.inputSubmission.ledgerSeqNo = obj.ledgerSeqNo;
+        if (true) { // Use 'false' for testing.
+            const funcUrl = `${window.dashboardConfig.inputFunc}&uri=${node.host}&input=${input}&output=1`;
+            const resp = await fetch(funcUrl, { method: 'POST' });
+            const obj = await resp.json();
+            node.inputSubmission.lastHash = obj.inputHash;
+            node.inputSubmission.failureReason = obj.failureReason;
+            node.inputSubmission.ledgerSeqNo = obj.ledgerSeqNo;
+            node.inputSubmission.output = obj.output;
+        }
+        else {
+            await new Promise(resolve => setTimeout(() => {
+                resolve();
+            }, 1000));
+            node.inputSubmission.lastHash = "testhash";
+            node.inputSubmission.ledgerSeqNo = 100;
+            node.inputSubmission.output = "ecall_error";
+        }
 
         node.inputSubmission.inProgress = false;
         this.inputSubmittingRegion = null;

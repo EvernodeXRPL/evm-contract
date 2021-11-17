@@ -2,7 +2,18 @@
 
 .input-form {
     overflow: hidden;
-    // min-height: 9rem;
+
+    textarea, input {
+        font-size: 0.85rem;
+    }
+
+    textarea.inputdata {
+        height: 14rem;
+    }
+
+    textarea.responsedata {
+        height: 4rem;
+    }
 
     &.submitting form {
         opacity: 0.5;
