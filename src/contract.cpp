@@ -7,7 +7,7 @@
 constexpr const char *DBNAME = "evm.db";
 constexpr size_t HEX_ADDR_SIZE = 40;
 
-int process_user_message(sqlite3 *db, const struct hp_user *user, const char *buf, const uint32_t len);
+int process_user_message(sqlite3 *db, const bool readonly, const struct hp_user *user, const char *buf, const uint32_t len);
 int exec_contract();
 int exec_test();
 
@@ -24,13 +24,10 @@ int exec_contract()
 
     const struct hp_contract_context *ctx = hp_get_context();
 
-    if (ctx->readonly) // This contract doesn't support readonly mode yet.
-        return 1;
-
     sqlite3 *db = NULL;
 
     // Create the sqlite db after genesis ledger.
-    if (ctx->lcl_seq_no == 1)
+    if (ctx->lcl_seq_no == 1 && !ctx->readonly)
     {
         sql::open_db(DBNAME, &db, true, false);
         sql::initialize_db(db);
@@ -56,9 +53,9 @@ int exec_contract()
 
             // Lazy-open the db if user inputs area available.
             if (db == NULL)
-                sql::open_db(DBNAME, &db, true, false);
+                sql::open_db(DBNAME, &db, !ctx->readonly, false);
 
-            process_user_message(db, user, buf, input.size);
+            process_user_message(db, ctx->readonly, user, buf, input.size);
         }
     }
 
@@ -69,10 +66,10 @@ int exec_contract()
     return 0;
 }
 
-int process_user_message(sqlite3 *db, const struct hp_user *user, const char *buf, const uint32_t len)
+int process_user_message(sqlite3 *db, const bool readonly, const struct hp_user *user, const char *buf, const uint32_t len)
 {
     if (len <= 1)
-        return -1;
+        return 0;
 
     // Input message formats:
     // Deploy: d<hex addr><hex bytecode>
@@ -83,7 +80,24 @@ int process_user_message(sqlite3 *db, const struct hp_user *user, const char *bu
     // Call result: c<output hex>
     // Error: e<reason>
 
-    if (buf[0] == 'd' && len > (HEX_ADDR_SIZE + 1)) // Deploy
+    if (strcmp(buf, "stats") == 0)
+    {
+        uint64_t acc_count = 0;
+        uint64_t acc_storage_count = 0;
+        if (evm::stats(db, acc_count, acc_storage_count) == 0)
+        {
+            std::string c1 = "," + std::to_string(acc_count);
+            std::string c2 = "," + std::to_string(acc_storage_count);
+            struct iovec vec[3] = {{(void *)"s", 1}, {(void *)c1.data(), c1.size()}, {(void *)c2.data(), c2.size()}};
+            hp_writev_user_msg(user, vec, 3);
+        }
+        else
+        {
+            struct iovec vec[2] = {{(void *)"e", 1}, {(void *)"stats_error", 11}};
+            hp_writev_user_msg(user, vec, 2);
+        }
+    }
+    else if (buf[0] == 'd' && len > (HEX_ADDR_SIZE + 1) && !readonly) // Deploy
     {
         std::string_view addr_hex(buf + 1, HEX_ADDR_SIZE);
         std::string_view code_hex(buf + 1 + HEX_ADDR_SIZE, (len - HEX_ADDR_SIZE - 1));
@@ -98,7 +112,7 @@ int process_user_message(sqlite3 *db, const struct hp_user *user, const char *bu
             hp_writev_user_msg(user, vec, 2);
         }
     }
-    else if (buf[0] == 'c' && len > (HEX_ADDR_SIZE + 1)) // Call
+    else if (buf[0] == 'c' && len > (HEX_ADDR_SIZE + 1) && !readonly) // Call
     {
         std::string_view addr_hex(buf + 1, HEX_ADDR_SIZE);
         std::string_view input_hex(buf + 1 + HEX_ADDR_SIZE, (len - HEX_ADDR_SIZE - 1));
@@ -115,7 +129,7 @@ int process_user_message(sqlite3 *db, const struct hp_user *user, const char *bu
         }
     }
 
-    return -1;
+    return 0;
 }
 
 int exec_test()

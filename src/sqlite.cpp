@@ -18,6 +18,8 @@ namespace sql
     constexpr const char *ACCOUNTS_TABLE = "acc";
     constexpr const char *ACCOUNTS_STORAGE_TABLE = "accstorage";
 
+    constexpr const char *GET_ACC_COUNT = "SELECT count(*) FROM acc";
+    constexpr const char *GET_ACC_STORAGE_COUNT = "SELECT count(*) FROM accstorage";
     constexpr const char *GET_BALANCE = "SELECT balance FROM acc WHERE addr=? LIMIT 1";
     constexpr const char *GET_CODE = "SELECT codelen, code FROM acc WHERE addr=? LIMIT 1";
     constexpr const char *GET_CODE_SIZE = "SELECT codelen FROM acc WHERE addr=? LIMIT 1";
@@ -26,7 +28,6 @@ namespace sql
     constexpr const char *UPDATE_ACCOUNTS_CODE = "UPDATE acc SET code=? WHERE addr=?";
     constexpr const char *INSERT_INTO_ACCOUNTS_STORAGE = "INSERT INTO accstorage(addr, key, value) VALUES(?,?,?)";
     constexpr const char *UPDATE_ACCOUNTS_STORAGE = "UPDATE accstorage SET value=? WHERE addr=? AND key=?";
-    constexpr const char *DELETE_FROM_ACCOUNTS_STORAGE = "DELETE FROM accstorage WHERE addr=? AND key=?";
 
 #define BIND_BLOB_N(idx, field, n) ((n > 0 && field.size() == n) ? (sqlite3_bind_blob(stmt, idx, field.data(), field.size(), SQLITE_STATIC) == SQLITE_OK) : (sqlite3_bind_null(stmt, idx) == SQLITE_OK))
 #define BIND_BLOB32(idx, field) BIND_BLOB_N(idx, field, 32)
@@ -457,6 +458,56 @@ namespace sql
         }
 
         std::cerr << errno << ": Error inserting account. " << sqlite3_errmsg(db) << "\n";
+        return -1;
+    }
+
+    int get_account_count(sqlite3 *db, uint64_t &count)
+    {
+        sqlite3_stmt *stmt;
+
+        if (sqlite3_prepare_v2(db, GET_ACC_COUNT, -1, &stmt, 0) == SQLITE_OK && stmt != NULL)
+        {
+            const int result = sqlite3_step(stmt);
+            if (result == SQLITE_ROW)
+            {
+                count = sqlite3_column_int64(stmt, 0);
+                sqlite3_finalize(stmt);
+                return 0;
+            }
+            else if (result == SQLITE_DONE)
+            {
+                sqlite3_finalize(stmt);
+                return -1;
+            }
+        }
+
+        std::cerr << "Error in sql get_account_storage. " << sqlite3_errmsg(db) << "\n";
+        sqlite3_finalize(stmt);
+        return -1;
+    }
+
+    int get_account_storage_count(sqlite3 *db, uint64_t &count)
+    {
+        sqlite3_stmt *stmt;
+
+        if (sqlite3_prepare_v2(db, GET_ACC_STORAGE_COUNT, -1, &stmt, 0) == SQLITE_OK && stmt != NULL)
+        {
+            const int result = sqlite3_step(stmt);
+            if (result == SQLITE_ROW)
+            {
+                count = sqlite3_column_int64(stmt, 0);
+                sqlite3_finalize(stmt);
+                return 0;
+            }
+            else if (result == SQLITE_DONE)
+            {
+                sqlite3_finalize(stmt);
+                return -1;
+            }
+        }
+
+        std::cerr << "Error in sql get_account_storage. " << sqlite3_errmsg(db) << "\n";
+        sqlite3_finalize(stmt);
         return -1;
     }
 }

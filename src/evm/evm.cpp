@@ -41,6 +41,15 @@ namespace evm
         return -1;
     }
 
+    int stats(sqlite3 *db, uint64_t &acc_count, uint64_t &acc_storage_acount)
+    {
+        if (sql::get_account_count(db, acc_count) != -1 &&
+            sql::get_account_storage_count(db, acc_storage_acount) != -1)
+            return 0;
+
+        return -1;
+    }
+
     const evmc::address bin2addr(std::string_view bin)
     {
         evmc::address addr = {};
