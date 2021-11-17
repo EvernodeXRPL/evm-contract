@@ -19,9 +19,10 @@
 
 namespace util
 {
-    std::string hex2bin(std::string_view hex);
-    std::string bin2hex(std::string_view s);
+    const std::string hex2bin(std::string_view hex);
+    const std::string bin2hex(std::string_view s);
     const std::string read_file(std::string_view path);
+    bool file_exists(std::string_view path);
 }
 
 #endif

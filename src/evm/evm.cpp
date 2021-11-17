@@ -9,36 +9,58 @@ namespace evm
     const evmc::address bin2addr(std::string_view bin);
     int execute(sqlite3 *db, std::string_view addr, std::string_view input, std::string_view code, std::string &output);
 
+    /**
+     * @return 0 if success. -1 if account already exists. -2 if evm error. -10 if generic error.
+     */
     int deploy(sqlite3 *db, std::string_view addr_hex, std::string_view code_hex)
     {
+        const std::string addr = util::hex2bin(addr_hex);
+        if (sql::account_exists(db, addr) == 1)
+            return -1;
+
         // Create a new account and run deployment bytecode against it.
         // Then store the resulting bytecode in the account code.
         std::string output;
-        std::string addr = util::hex2bin(addr_hex);
-        std::string code = util::hex2bin(code_hex);
+        const std::string code = util::hex2bin(code_hex);
         evmc::uint256be balance = LARGE_BALANCE;
-        if (sql::insert_account(db, addr, BINSTR(balance), code) != -1 &&
-            execute(db, addr, {}, code, output) == 0)
-            return sql::update_account_code(db, addr, output);
+        if (sql::insert_account(db, addr, BINSTR(balance), code) != -1)
+        {
+            if (execute(db, addr, {}, code, output) != 0)
+                return -2;
 
-        return -1;
+            if (sql::update_account_code(db, addr, output) == 0)
+                return 0;
+        }
+
+        return -10;
     }
 
+    /**
+     * @return 0 if success. -1 if account not found. -2 if evm error. -10 if generic error.
+     */
     int call(sqlite3 *db, std::string_view addr_hex, std::string_view input_hex, std::string &output_hex)
     {
+        const std::string addr = util::hex2bin(addr_hex);
+        if (sql::account_exists(db, addr) == 0)
+            return -1;
+
         // Retrieve the account's code and run the code.
         std::string code;
-        std::string addr = util::hex2bin(addr_hex);
-        std::string input = util::hex2bin(input_hex);
+        const std::string input = util::hex2bin(input_hex);
         if (sql::get_account_code(db, addr, code) == 1)
         {
             std::string output;
-            const int ret = execute(db, addr, input, code, output);
-            if (ret == 0)
+            if (execute(db, addr, input, code, output) == 0)
+            {
                 output_hex = util::bin2hex(output);
-            return ret;
+                return 0;
+            }
+            else
+            {
+                return -2;
+            }
         }
-        return -1;
+        return -10;
     }
 
     int stats(sqlite3 *db, uint64_t &acc_count, uint64_t &acc_storage_acount)
@@ -58,6 +80,9 @@ namespace evm
         return addr;
     }
 
+    /**
+     * 0 if success. > 0 if error.
+     */
     int execute(sqlite3 *db, std::string_view addr, std::string_view input, std::string_view code, std::string &output)
     {
         evmc::address eaddr = bin2addr(addr);

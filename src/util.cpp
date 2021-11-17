@@ -3,7 +3,7 @@
 
 namespace util
 {
-    std::string hex2bin(std::string_view hex)
+    const std::string hex2bin(std::string_view hex)
     {
         std::string_view s = (hex.size() > 2 && hex[0] == '0' && (hex[1] == 'x' || hex[1] == 'X')) ? hex.substr(2) : hex;
 
@@ -19,7 +19,7 @@ namespace util
         return sOut;
     }
 
-    std::string bin2hex(std::string_view s)
+    const std::string bin2hex(std::string_view s)
     {
         std::ostringstream oss;
 
@@ -27,5 +27,11 @@ namespace util
             oss << std::hex << std::setw(2) << std::setfill('0') << (int)ch;
 
         return oss.str();
+    }
+
+    bool file_exists(std::string_view path)
+    {
+        std::ifstream infile(path.data());
+        return infile.good();
     }
 }
