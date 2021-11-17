@@ -1,0 +1,22 @@
+@import "variables";
+
+.input-form {
+    overflow: hidden;
+    height: 28rem;
+
+    textarea, input {
+        font-size: 0.85rem;
+    }
+
+    textarea.inputdata {
+        height: 10rem;
+    }
+
+    textarea.responsedata {
+        height: 4rem;
+    }
+
+    &.submitting form {
+        opacity: 0.5;
+    }
+}

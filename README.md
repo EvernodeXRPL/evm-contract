@@ -1,7 +1,7 @@
 # EVM Contract
 Hot Pocket C++ contract that can execute compiled solidity contracts using [evmone](https://github.com/ethereum/evmone) library.
 
-# Setting up development environment
+## Setting up development environment
 
 ### 1. Install EVMC library
 ```

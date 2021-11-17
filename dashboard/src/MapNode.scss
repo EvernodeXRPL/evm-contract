@@ -1,0 +1,154 @@
+@import "variables";
+
+$marker-size: .7rem;
+$node-width: 15rem;
+
+.map-node-container {
+    width: 0rem;
+    height: 0rem;
+    position: relative;
+    cursor: pointer;
+
+    &.ledger-input {
+        .node-name {
+            border-top-color: $badge-green !important;
+            .seq-no {
+                color: $badge-green;
+            }
+        }
+    }
+
+    &.ledger-output {
+        .node-name {
+            border-bottom-color: $badge-orange !important;
+            .seq-no {
+                color: $badge-orange;
+            }
+        }
+    }
+
+    .map-ledger-card-container {
+        width: 0rem;
+        height: 0rem;
+
+        .ledger-card {
+            width: $node-width;
+        }
+    }
+
+    .map-node-marker-container {
+        width: 0rem;
+        height: 0rem;
+
+        .map-node-marker {
+            transform: translate(-50%, -50%);
+            width: $marker-size;
+            height: $marker-size;
+            line-height: $marker-size;
+            text-align: center;
+            font-size: 0.6rem;
+            color: rgba(0, 0, 0, 0.5);
+
+            &.blink {
+                animation: blinker 1s linear infinite;
+            }
+
+            @keyframes blinker {
+                50% {
+                    opacity: 0.2;
+                }
+            }
+        }
+
+        .node-name-container {
+            width: 0rem;
+            height: 0rem;
+        }
+
+        .node-name {
+            font-size: 0.65rem;
+            line-height: 0.3rem;
+            font-weight: normal;
+            text-shadow: 0px 0px 6px black;
+            border-top: 2px solid rgba(0, 0, 0, 0);
+            border-bottom: 2px solid rgba(0, 0, 0, 0);
+
+            &.anchor-tl {
+                transform: translate(0.2rem, 0rem);
+            }
+
+            &.anchor-tr {
+                transform: translate(-103%, 0rem);
+            }
+
+            &.anchor-br {
+                transform: translate(-102%, -1.2rem);
+            }
+
+            &.anchor-bl {
+                transform: translate(0.1rem, -1.1rem);
+            }
+
+            &.emphasize {
+                background-color: purple;
+            }
+        }
+    }
+
+    &.anchor-tl {
+        .ledger-card {
+            transform: translate(0rem, 0rem);
+        }
+    }
+
+    &.anchor-tr {
+        .ledger-card {
+            transform: translate(-100%, 0rem);
+        }
+    }
+
+    &.anchor-br {
+        .ledger-card {
+            transform: translate(-100%, -100%);
+        }
+    }
+
+    &.anchor-bl {
+        .ledger-card {
+            transform: translate(0rem, -100%);
+        }
+    }
+
+    &.status-initial {
+        opacity: 0.6;
+    }
+
+    &.status-error {
+        .ledger-header {
+            background-color: $red;
+        }
+
+        .map-node-marker {
+            background-color: $red;
+            box-shadow: 0 0 3px 2px $red-dark;
+        }
+    }
+
+    &.status-desync {
+        .ledger-header {
+            background-color: $marker-yellow-dark;
+        }
+
+        .map-node-marker {
+            background-color: $marker-yellow;
+            box-shadow: 0 0 3px 2px $marker-yellow-dark;
+        }
+    }
+
+    &.status-normal {
+        .map-node-marker {
+            background-color: $marker-green;
+            box-shadow: 0 0 3px 2px $marker-green-dark;
+        }
+    }
+}
