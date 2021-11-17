@@ -74,5 +74,9 @@ namespace sql
     int update_account_code(sqlite3 *db, std::string_view addr, std::string_view code);
 
     int update_account_storage(sqlite3 *db, std::string_view addr, std::string_view key, std::string_view value);
+
+    int get_account_count(sqlite3 *db, uint64_t &count);
+
+    int get_account_storage_count(sqlite3 *db, uint64_t &count);
 }
 #endif
