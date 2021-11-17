@@ -41,7 +41,7 @@ else {
             const inputForm = document.getElementsByClassName("input-form")[0];
             const formHeight = inputForm ? inputForm.clientHeight : 0;
             const numBarHeight = nodeNumBar ? nodeNumBar.clientHeight : 0;
-            ledgerScroll.style.height = (document.body.clientHeight - formHeight - numBarHeight - 200) + "px"
+            ledgerScroll.style.height = (document.body.clientHeight - formHeight - numBarHeight - 120) + "px"
         }
     }
 

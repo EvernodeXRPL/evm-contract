@@ -303,6 +303,12 @@ class HPNodeManager {
             node.inputSubmission.output = "ecall_error";
         }
 
+        const code = node.inputSubmission.output && node.inputSubmission.output.substr(0, 1);
+        node.inputSubmission.output = node.inputSubmission.output && node.inputSubmission.output.substr(1);
+
+        if (code === "d")
+            node.inputSubmission.output = "Deployed the bytecode on account " + node.inputSubmission.output;
+
         node.inputSubmission.inProgress = false;
         this.inputSubmittingRegion = null;
         this.inputSubmittingNode = null;
