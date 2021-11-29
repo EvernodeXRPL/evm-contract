@@ -286,8 +286,8 @@ class HPNodeManager {
         // }
 
         if (true) { // Use 'false' for testing.
-            const funcUrl = `${window.dashboardConfig.inputFunc}&uri=${node.host}&input=${input}&output=1`;
-            const resp = await fetch(funcUrl, { method: 'POST' });
+            const funcUrl = `${window.dashboardConfig.inputFunc}&uri=${node.host}&output=1`;
+            const resp = await fetch(funcUrl, { method: 'POST', body: JSON.stringify({ input: input }) });
             const obj = await resp.json();
             node.inputSubmission.lastHash = obj.inputHash;
             node.inputSubmission.failureReason = obj.failureReason;
